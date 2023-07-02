@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 
@@ -46,8 +47,38 @@ func main() {
 		},
 	}
 	if _, err = client.Collections().Create(schema); err != nil {
-		fmt.Println("Schema not created", err)
+		fmt.Println("Create Schema:", err)
+	}
+	glossary, err := os.Open("./stash/glossary/glossary.jsonl")
+	if err != nil {
+		fmt.Println("Opening glossary:", err)
 		os.Exit(1)
 	}
-	// fmt.Println("Created schema: ", collectionResponse.Name)
+	create := "create"
+	batchSize := 5
+	params := &api.ImportDocumentsParams{
+		Action:    &create,
+		BatchSize: &batchSize,
+	}
+	_, err = client.Collection(schema.Name).Documents().ImportJsonl(glossary, params)
+	if err != nil {
+		fmt.Println("Import Glossary Json:", err)
+	}
+	fmt.Println("Done.")
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter text to search:")
+	text, _ := reader.ReadString('\n')
+	fmt.Printf("Searching %s\n", text)
+	searchParams := &api.SearchCollectionParams{
+		Q:       text,
+		QueryBy: "title, description",
+	}
+	searchResult, err := client.Collection(schema.Name).Documents().Search(searchParams)
+	if err != nil {
+		fmt.Printf("Search %s returned: %v", text, err)
+		os.Exit(1)
+	}
+	if searchResult.Found != nil {
+		fmt.Printf("Found %d documents\n", *searchResult.Found)
+	}
 }
