@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 	"github.com/typesense/typesense-go/typesense"
@@ -44,6 +45,9 @@ func main() {
 			},
 		},
 	}
-	client.Collections().Create(schema)
-	fmt.Println("Created schema")
+	if _, err = client.Collections().Create(schema); err != nil {
+		fmt.Println("Schema not created", err)
+		os.Exit(1)
+	}
+	// fmt.Println("Created schema: ", collectionResponse.Name)
 }
